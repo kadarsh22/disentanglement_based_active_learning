@@ -1,7 +1,7 @@
 # Disentaglement-Active-Learning
 
 Project Directory Structure
-'''bash
+```bash
 └── utils
     ├── cifar10_2class
     │   ├── helper_functions_trainer
@@ -15,7 +15,6 @@ Project Directory Structure
     │   ├── model_files
     │   │   └── human_cnn
     │   │       └── fashion
-    │   │           └── __pycache__
     │   └── trained_models
     │       ├── dcgan
     │       ├── human_cnn
@@ -44,4 +43,4 @@ Project Directory Structure
     │       ├── lenet
     │       └── wgan
     └── svhn
-'''
+```
