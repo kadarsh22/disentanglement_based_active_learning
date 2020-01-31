@@ -7,6 +7,12 @@ python main.py --dataset  'fashion-mnist' --gan_type 'infoGAN' --output_activati
 python main.py --dataset  'cifar10_2class' --gan_type 'infoGAN' --output_activation 'tanh' --data_size 10000 --no_classes 2 --input_channel 3  --input_size 32
 ```
 
+Note humancnn for fashion mnist couldnot be uploaded ti git as size exceed >100MB
+download it from the url given below and keep the downloaded files in:
+```bash
+utils/fashionmnist/trainedmoddels 
+link : https://drive.google.com/open?id=1M_5ZumHrNjn-_rTiBA6nnsHiYi9p-TbU
+```
 
 Project Directory Structure
 ```bash
