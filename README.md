@@ -1,5 +1,13 @@
 # Disentaglement-Active-Learning
 
+To run infogan
+```bash
+python main.py --dataset  'mnist' --gan_type 'infoGAN' --output_activation 'sigmoid' --data_size 10000
+python main.py --dataset  'fashion-mnist' --gan_type 'infoGAN' --output_activation 'tanh' --data_size 10000
+python main.py --dataset  'cifar10_2class' --gan_type 'infoGAN' --output_activation 'tanh' --data_size 10000 --no_classes 2 --input_channel 3  --input_size 32
+```
+
+
 Project Directory Structure
 ```bash
 └── utils
