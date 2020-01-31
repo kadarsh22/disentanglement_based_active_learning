@@ -1,7 +1,7 @@
 # Disentaglement-Active-Learning
 
 Project Directory Structure
-
+'''bash
 └── utils
     ├── cifar10_2class
     │   ├── helper_functions_trainer
@@ -44,4 +44,4 @@ Project Directory Structure
     │       ├── lenet
     │       └── wgan
     └── svhn
-
+'''
