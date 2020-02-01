@@ -58,7 +58,7 @@ class ActivelearningDal:
 			temp_list_labels = torch.stack(temp_list_labels)
 
 			train_dataset = NewDataset(temp_list_data, temp_list_labels)
-			if self.config.dataset == 'cifar10_2class'
+			if self.config.dataset == 'cifar10_2class':
 				split_data = random_split(train_dataset, [9000, 1000])
 			else:
 				split_data = random_split(train_dataset, [50000, 10000])
