@@ -7,6 +7,8 @@ import torch.nn.functional as F
 from Custom_Dataset import NewDataset
 from early_stopping import EarlyStopping
 from model_selection import model_selection
+import matplotlib.pyplot as plt
+import torchvision
 
 
 class Trainer:
@@ -27,6 +29,7 @@ class Trainer:
 
 		images = self._generate_images()
 		labels = self._human_cnn_annotation(images)
+		self.get_generation_accuracy(images)
 		train_dataset = NewDataset(images, labels)
 		_, accuracy = self._train_cnn(train_dataset, self.data_loader[1])
 
@@ -70,6 +73,7 @@ class Trainer:
 
 	def _train_cnn(self, train_dataset, val_dataset):
 
+
 		train_loader = torch.utils.data.DataLoader(dataset=train_dataset, batch_size=self.batch_size, shuffle=True)
 		val_loader = torch.utils.data.DataLoader(dataset=val_dataset, batch_size=self.batch_size, shuffle=True)
 		test_loader = self.data_loader[2]
@@ -78,7 +82,7 @@ class Trainer:
 		model = self.active_learner.to(self.device)
 
 		early_stopping = EarlyStopping(patience=10, verbose=False)
-		for epoch in range(50):
+		for epoch in range(1000):
 			train_loss = []
 			valid_loss = []
 			model.train()
@@ -104,8 +108,8 @@ class Trainer:
 			train_loss_avg = sum(train_loss) / len(train_loss)
 			valid_loss_avg = sum(valid_loss) / len(valid_loss)
 
-			if self.config.active_learning == False:
-				print('Epoch: {}, train_loss : {}, test_loss : {}'.format(epoch, train_loss_avg,
+			# if self.config.active_learning == False:
+			print('Epoch: {}, train_loss : {}, test_loss : {}'.format(epoch, train_loss_avg,
 																		  valid_loss_avg))
 			early_stopping(valid_loss_avg, model)
 			if early_stopping.early_stop:
@@ -133,4 +137,16 @@ class Trainer:
 
 		return model, accuracy
 
-#	def get_generation_accuracy(self,images):
+	def get_labels(self):
+		s = input("Enter labels for new data")
+		labels = list(s)
+		labels = [int(x) for x in labels]
+		return labels
+
+	def get_generation_accuracy(self,images):
+		grid_img = torchvision.utils.make_grid(images[:100], nrow=10, normalize=True)
+		plt.imshow(grid_img.permute(1, 2, 0).cpu().data)
+		plt.show()
+		labels = self.get_labels()
+#		labels = torch.LongTensor(labels*)
+

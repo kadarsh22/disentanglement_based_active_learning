@@ -1,17 +1,20 @@
 import torch
 from torch.utils.data.dataset import random_split
 import sys
+
 sys.path.insert(0, 'utils/')
 from Custom_Dataset import NewDataset
 from model_selection import model_selection
 import random
 import os
 import numpy as np
+import matplotlib.pyplot as plt
+import torchvision
 from copy import deepcopy
 
 
 class ActivelearningDal:
-	def __init__(self, config, data_loader , trainer):
+	def __init__(self, config, data_loader, trainer):
 
 		self.config = config
 		self.input_channels = config.input_channel
@@ -21,33 +24,33 @@ class ActivelearningDal:
 		self.labelling_budget = config.labelling_budget
 		self.data_loader = data_loader
 		self.no_classes = config.no_classes
-		self.active_sample_size = config.initial_samples
+		self.active_sample_size = config.active_sample_size
 		self.intial_samples = config.initial_samples
 		self.device = torch.device("cuda:" + str(config.device_id) if torch.cuda.is_available() else "cpu")
 		self.trainer = trainer
 
-
 		self.generator, self.human_cnn, self.active_learner, self.optimizer, self.scheduler = model_selection(
-			self.dataset, config.gan_type, self.device,config.active_learning)
+			self.dataset, config.gan_type, self.device, config.active_learning)
 
 	def dal_active_learning(self):
-		random_seeds = random.sample(range(1000), 5)
+		random_seeds = [123,22,69,5,108]
 		gen_size = int(self.active_sample_size / self.no_classes)  ## reconfirm if its okay to keep it out side loop
 		total_active_cycles = int(self.labelling_budget / self.active_sample_size) - 1
-		label_freq_cycle = torch.zeros(total_active_cycles, self.no_classes)
+
 
 		for i in random_seeds:
 			print("Executing Random seed " + str(i))
 			active_learning_cycle = 0
 
-			save_dir = os.path.join(self.config.project_root, f'results/{self.config.model_name}/'+ 'random_seed' + str(i))
-			if not os.path.isdir(save_dir):
-				save_dir = os.path.join(self.config.project_root, f'results/{self.config.model_name}/'+ 'random_seed' + str(i))
-				os.makedirs(save_dir, exist_ok=True)
+			self.save_dir = os.path.join(self.config.project_root,
+									f'results/{self.config.model_name}/' + 'random_seed' + str(i))
+			if not os.path.isdir(self.save_dir):
+				self.save_dir = os.path.join(self.config.project_root,
+										f'results/{self.config.model_name}/' + 'random_seed' + str(i))
+				os.makedirs(self.save_dir, exist_ok=True)
 
 			model = self.active_learner
 			model.to(self.device)
-
 
 			train_dataset = self.data_loader[3]
 
@@ -69,7 +72,7 @@ class ActivelearningDal:
 			train_idx = temp_train_dataset.indices
 			train_dataset.data = train_dataset.data[train_idx]
 			train_dataset.targets = train_dataset.targets[train_idx]
-
+			label_freq_cycle = torch.zeros(total_active_cycles, self.no_classes)
 			# Initialisation of training examples
 
 			num_samples_class = int(self.intial_samples / self.no_classes)
@@ -87,12 +90,16 @@ class ActivelearningDal:
 			train_dataset.targets = train_dataset.targets[training_index]
 			training_data_labels = train_dataset.targets.numpy()
 
+			print(type(train_dataset.data))
+			self.save_image(train_dataset.data)
+			print(training_data_labels)
+
 			temp_train_dataset = deepcopy(train_dataset)
 			num_misclassifications, entropies, properly_classified_data, accuracy_list = ([] for i in range(4))
 
 			size = self.intial_samples
 			while (size <= self.labelling_budget):
-				model, accuracy = self.trainer._train_cnn(train_dataset , validation_dataset)
+				model, accuracy = self.trainer._train_cnn(train_dataset, validation_dataset)
 				accuracy_list.append(accuracy)
 				print("----Size of training data----", size)
 				print("-----Accuracy-------", accuracy)
@@ -104,7 +111,15 @@ class ActivelearningDal:
 				entropies.append(entropy)
 
 				new_samples = new_samples.data.cpu()
-				latent_code = torch.LongTensor([3, 7, 8, 2, 0, 6, 1, 5, 4, 9] * gen_size)
+				if self.intial_samples == size:
+					self.save_image(new_samples)
+
+				if  self.dataset == 'fashion-mnist':
+					latent_code = torch.LongTensor([3, 7, 6, 2, 0, 8, 1, 5, 4, 9] * gen_size)
+				elif self.dataset == 'mnist':
+					latent_code =  torch.LongTensor([0,1,2,3,4,5,6,7,8,9] * gen_size)
+				else:
+					latent_code = torch.LongTensor([0,1]*gen_size)
 
 				if len(properly_classified_data) != 0:
 					new_samples = torch.cat((new_samples.data, properly_classified_data.data), 0)
@@ -112,7 +127,8 @@ class ActivelearningDal:
 
 				data = NewDataset(new_samples, latent_code)
 
-				annotation_loader = torch.utils.data.DataLoader(dataset=data, batch_size=64, shuffle=False, drop_last=False)
+				annotation_loader = torch.utils.data.DataLoader(dataset=data, batch_size=64, shuffle=False,
+																drop_last=False)
 				predicted = torch.LongTensor().to(self.device)
 				for images, labels in annotation_loader:
 					images = images.to(self.device)
@@ -125,7 +141,7 @@ class ActivelearningDal:
 				misclassification_index = [i for i, e in enumerate(data_diff) if e != 0]
 				properly_classified_index = [i for i, e in enumerate(data_diff) if e == 0]
 				len_misclass = len(misclassification_index)
-#				len_prop_index = len(properly_classified_index)
+				#				len_prop_index = len(properly_classified_index)
 				num_misclassifications.append(len_misclass)
 
 				#         print("Properly classifed index", len_prop_index)
@@ -155,7 +171,6 @@ class ActivelearningDal:
 				misclassified_data = NewDataset(new_samples[misclassification_index].cpu(),
 												latent_code[misclassification_index].cpu())
 
-
 				temp_train_dataset = torch.utils.data.ConcatDataset((temp_train_dataset, misclassified_data))
 				train_dataset = torch.utils.data.ConcatDataset((temp_train_dataset, properly_classified_data))
 				training_data_labels = np.append(training_data_labels, np.array(latent_code.cpu()))
@@ -168,7 +183,7 @@ class ActivelearningDal:
 				model.to(self.device)
 
 				if size % 2000 == 0:
-					path = save_dir + '/' + 'intermediate_results' + str(size)
+					path = self.save_dir + '/' + 'intermediate_results' + str(size)
 					if not os.path.isdir(path):
 						os.mkdir(path)
 					torch.save(accuracy_list, path + '/accuracy_list')
@@ -179,8 +194,10 @@ class ActivelearningDal:
 
 			print("--------Random seed " + str(i) + "completed--------")
 
-
-
+	def save_image(self, image):
+		grid_img = torchvision.utils.make_grid(image[:100], nrow=10, normalize=True)
+		plt.imshow(grid_img.permute(1, 2, 0).cpu().data)
+		plt.savefig(self.save_dir + 'self.config.model_name' + '.png' )
 
 	def set_seed(self, seed):
 		torch.backends.cudnn.deterministic = True
