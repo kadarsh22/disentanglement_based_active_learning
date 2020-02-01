@@ -1,26 +1,39 @@
 import torch
+import torch.nn as nn
 from torch.autograd import Variable
 import sys
-
 sys.path.insert(0, 'utils/fashionmnist/model_files/')
 sys.path.insert(0, 'utils/fashionmnist/trained_models/')
 from infogan import generator
 import human_cnn.fashion as models
 import numpy as np
 from cnn_classifier import CNNModel
+import torch.nn.functional as F
+
+
+class Entropy(nn.Module):
+	def __init__(self):
+		super(Entropy, self).__init__()
+
+	def forward(self, x):
+		b = F.softmax(x, dim=1) * torch.log10(F.softmax(x, dim=1))
+		b = b.sum()
+		return b
 
 
 class infoganfashionmnist:
-	def __init__(self, device, sample_size=1000, z_dim=62, len_discrete_code=10):
+	def __init__(self, device, sample_size=1000, z_dim=62, len_discrete_code=10, active_learning = False):
 		self.device = device
 		self.sample_size = sample_size
 		self.z_dim = z_dim
+		self.active_learning = active_learning
 		self.len_discrete_code = len_discrete_code
 		self.G = generator().to(self.device)
 		self.G.load_state_dict(
 			torch.load('utils/fashionmnist/trained_models/infoGAN/infoGAN_G.pkl', map_location=self.device))
 
-	def generate_images(self):
+	def generate_images(self, model=None):
+
 		z_ = torch.rand((self.sample_size, self.z_dim)).to(self.device)
 		z = Variable(z_.to(self.device), requires_grad=True).to(self.device)
 		y_ = torch.Tensor([0, 1, 2, 3, 4, 5, 6, 7, 8, 9] * int(self.sample_size / self.len_discrete_code))
@@ -30,8 +43,20 @@ class infoganfashionmnist:
 																				   1).to(self.device)
 		y_cont_ = torch.from_numpy(np.random.uniform(-1, 1, size=(self.sample_size, 2))).type(torch.FloatTensor).to(
 			self.device)
-		imgs = self.G(z, y_cont_, y_disc_).to(self.device)
-		return imgs
+
+		optimizer = torch.optim.Adam([z.requires_grad_()], lr=0.0001)
+		if self.active_learning == True:
+			z_criterion = Entropy()
+			for opt in range(500):
+				optimizer.zero_grad()
+				samples = self.G(z, y_cont_, y_disc_).to(self.device)
+				loss = z_criterion(model(samples))
+				loss.backward()
+				optimizer.step()
+			return samples, loss.item()
+		else:
+			imgs = self.G(z, y_cont_, y_disc_).to(self.device)
+			return imgs
 
 	def human_cnn_model(self):
 		human_cnn = models.__dict__['wrn'](num_classes=10, depth=28, widen_factor=10, dropRate=0)

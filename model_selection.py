@@ -1,7 +1,7 @@
 import sys
 
 
-def model_selection(dataset , gan_type, device):
+def model_selection(dataset , gan_type, device,active_learn):
 
 	if dataset == 'mnist':
 		sys.path.insert(0, 'utils/mnist/helper_functions_trainer')
@@ -9,7 +9,7 @@ def model_selection(dataset , gan_type, device):
 
 			from dcgan_generate import dcgannmnist
 
-			gan_class = dcgannmnist(device) ##TODO naming dcgan_mnist
+			gan_class = dcgannmnist(device, active_learning=active_learn) ##TODO naming dcgan_mnist
 			human_cnn = gan_class.human_cnn()
 			active_learner ,optimizer ,scheduler = gan_class.active_learner()
 
@@ -17,7 +17,7 @@ def model_selection(dataset , gan_type, device):
 
 			from infogan_generate import infoganmnist
 
-			gan_class = infoganmnist(device)
+			gan_class = infoganmnist(device, active_learning=active_learn)
 			human_cnn = gan_class.human_cnn()
 			active_learner ,optimizer ,scheduler = gan_class.active_learner()
 
@@ -30,7 +30,7 @@ def model_selection(dataset , gan_type, device):
 
 			from dcgan_generate import dcganfashionmnist
 
-			gan_class = dcganfashionmnist(device)
+			gan_class = dcganfashionmnist(device, active_learning=active_learn)
 			human_cnn = gan_class.human_cnn()
 			active_learner  ,optimizer ,scheduler = gan_class.active_learner()
 
@@ -39,7 +39,7 @@ def model_selection(dataset , gan_type, device):
 
 			from infogan_generate import infoganfashionmnist
 
-			gan_class = infoganfashionmnist(device)
+			gan_class = infoganfashionmnist(device, active_learning=active_learn)
 			human_cnn = gan_class.human_cnn_model()
 			active_learner  ,optimizer ,scheduler= gan_class.active_learner()
 
@@ -50,14 +50,14 @@ def model_selection(dataset , gan_type, device):
 
 		if gan_type == 'dcGAN':
 			from dcgan_generate import dcgancifar10_2class
-			gan_class = dcgancifar10_2class(device)
+			gan_class = dcgancifar10_2class(device, active_learning=active_learn)
 			human_cnn = gan_class.human_cnn()
 			active_learner  ,optimizer ,scheduler = gan_class.active_learner()
 
 		elif gan_type == 'infoGAN':
 			from infogan_generate import infogancifar10_2class
 
-			gan_class = infogancifar10_2class(device)
+			gan_class = infogancifar10_2class(device,active_learning=active_learn)
 			human_cnn = gan_class.human_cnn_model()
 			active_learner  ,optimizer ,scheduler= gan_class.active_learner()
 		return gan_class, human_cnn, active_learner ,optimizer ,scheduler

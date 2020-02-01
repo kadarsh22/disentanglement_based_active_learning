@@ -80,25 +80,46 @@ class Discriminator(nn.Module):
         x = F.leaky_relu(self.bn2(self.fc1(x)))
         return self.fc2(x), F.leaky_relu(self.bn_q1(self.fc1_q(x)))
 
+class Entropy(nn.Module):
+    def __init__(self):
+        super(Entropy, self).__init__()
+
+    def forward(self, x):
+        b = F.softmax(x, dim=1) * torch.log10(F.softmax(x, dim=1))
+        b = b.sum()
+        return b
 
 
 class infoganmnist:
-	def __init__(self, device ,sample_size = 1000 , z_dim = 100):
+	def __init__(self, device ,sample_size = 1000 , z_dim = 100,active_learning = False):
 		self.device = device
 		self.sample_size = sample_size
 		self.z_dim = z_dim
+		self.active_learning = active_learning
 		infogan_gen = Generator().to(device)
 		infogan_dis = Discriminator().to(device)
 		self.G = InfoGAN(infogan_gen, infogan_dis, embedding_len, z_len, c1_len, c2_len, c3_len, device)
 		self.G.load('utils/mnist/trained_models/infogan/infogan_100_z_114/')
 
 
-	def generate_images(self):
+	def generate_images(self,model = None):
 		z_dict = self.G.get_z(c1_len * 100, sequential=True)
 		gan_input = torch.cat([z_dict[k] for k in z_dict.keys()], dim=1)
 		gan_input = Variable(gan_input, requires_grad=True).to(self.device)
-		imgs = self.G.gen(gan_input)
-		return imgs
+		if self.active_learning == True:
+			optimizer = torch.optim.Adam([gan_input.requires_grad_()], lr= 0.001)
+			z_criterion = Entropy()
+			for opt in range(500):
+				optimizer.zero_grad()
+				out_gen = self.G.gen(gan_input)
+				loss = z_criterion(model(out_gen))
+				loss.backward()
+				gan_input.grad[:, z_len:] = gan_input.grad[:, z_len:].data.fill_(0)
+				optimizer.step()
+			return out_gen ,loss.item()
+		else:
+			imgs = self.G.gen(gan_input)
+			return imgs
 
 	def human_cnn(self):
 		full_cnn_model = Lenet()

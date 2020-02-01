@@ -21,13 +21,21 @@ parser.add_argument('--input_size', type=int, default=28, help='The size of inpu
 parser.add_argument('--input_channel', type=int, default=1, help='The size of input image')
 parser.add_argument('--save_dir', type=str, default='models', help='Directory name to save the model')
 parser.add_argument('--result_dir', type=str, default='results', help='Directory name to save the generated images')
-parser.add_argument('--project_root', type=str, default=get_root())
+parser.add_argument('--project_root', type=str, default=get_root() +  '/Disentaglement-Active-Learning-master/')
 parser.add_argument('--model_name', type=str, default='Debugging')
 parser.add_argument('--output_activation', type=str, default='tanh')
 parser.add_argument('--device_id', type=int, default=0)
 parser.add_argument('--data_size', type=int, default=10000)
 parser.add_argument('--z_dim', type=int, default=62)
 parser.add_argument('--no_classes', type=int, default=10)
+
+## active learning specfic
+parser.add_argument('--initial_samples', type=int, default=100, help='The number of initial datapoints to be labelled')
+parser.add_argument('--active_sample_size', type=int, default=200,
+					help='The number of points to be labelled in each active learning cycle')
+parser.add_argument('--labelling_budget', type=int, default=10000, help='Total number of points that could be labelled')
+parser.add_argument('--random_seeds', type=int, default=3, help='Number of random seeds to run for ')
+parser.add_argument('--active_learning',type = bool ,default= False ,help = 'Wether active_learning or Not ')
 
 
 def get_config():
