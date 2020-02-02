@@ -2,12 +2,12 @@ import torch
 import torch.nn as nn
 from torch.autograd import Variable
 import sys
+
 sys.path.insert(0, 'utils/')
 import torch.nn.functional as F
 from Custom_Dataset import NewDataset
 from early_stopping import EarlyStopping
 from model_selection import model_selection
-import matplotlib.pyplot as plt
 import torchvision
 
 
@@ -29,7 +29,7 @@ class Trainer:
 
 		images = self._generate_images()
 		labels = self._human_cnn_annotation(images)
-		# self.get_generation_accuracy(images)
+		self.get_generation_accuracy(labels)
 		train_dataset = NewDataset(images, labels)
 		_, accuracy = self._train_cnn(train_dataset, self.data_loader[1])
 
@@ -73,7 +73,6 @@ class Trainer:
 
 	def _train_cnn(self, train_dataset, val_dataset):
 
-
 		train_loader = torch.utils.data.DataLoader(dataset=train_dataset, batch_size=self.batch_size, shuffle=True)
 		val_loader = torch.utils.data.DataLoader(dataset=val_dataset, batch_size=self.batch_size, shuffle=True)
 		test_loader = self.data_loader[2]
@@ -110,7 +109,7 @@ class Trainer:
 
 			# if self.config.active_learning == False:
 			print('Epoch: {}, train_loss : {}, test_loss : {}'.format(epoch, train_loss_avg,
-																		  valid_loss_avg))
+																	  valid_loss_avg))
 			early_stopping(valid_loss_avg, model)
 			if early_stopping.early_stop:
 				break
@@ -132,21 +131,21 @@ class Trainer:
 		correct = correct.float()
 		accuracy = 100 * correct / total
 
-
 		print('Accuracy on test set {}'.format(accuracy))
 
 		return model, accuracy
 
-	def get_labels(self):
-		s = input("Enter labels for new data")
-		labels = list(s)
-		labels = [int(x) for x in labels]
-		return labels
+	def get_generation_accuracy(self, labels):
+		if self.dataset == 'fashion-mnist':
+			gan_labels = torch.LongTensor([3, 7, 6, 2, 0, 8, 1, 5, 4, 9] * int(labels.shape[0]/10))
+		elif self.dataset == 'mnist':
+			gan_labels = torch.LongTensor([0, 1, 2, 3, 4, 5, 6, 7, 8, 9] * int(labels.shape[0]/10))
+		else:
+			gan_labels = torch.LongTensor([0, 1] * int(labels.shape[0]/2))
+		correct = (gan_labels== labels.cpu()).sum()
+		total = labels.size(0)
+		correct = correct.float()
+		accuracy = 100 * correct / total
+		print('Generation accuracy ---',accuracy)
 
-	def get_generation_accuracy(self,images):
-		grid_img = torchvision.utils.make_grid(images[:100], nrow=10, normalize=True)
-		plt.imshow(grid_img.permute(1, 2, 0).cpu().data)
-		plt.show()
-		labels = self.get_labels()
-#		labels = torch.LongTensor(labels*)
 
