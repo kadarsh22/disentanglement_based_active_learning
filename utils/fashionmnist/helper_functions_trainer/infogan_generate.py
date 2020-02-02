@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 from torch.autograd import Variable
 import sys
+import random
 sys.path.insert(0, 'utils/fashionmnist/model_files/')
 sys.path.insert(0, 'utils/fashionmnist/trained_models/')
 from infogan import generator
@@ -22,7 +23,7 @@ class Entropy(nn.Module):
 
 
 class infoganfashionmnist:
-	def __init__(self, device, sample_size=1000, z_dim=62, len_discrete_code=10, active_learning = False):
+	def __init__(self, device, sample_size=1000, z_dim=62, len_discrete_code=10, active_learning=False):
 		self.device = device
 		self.sample_size = sample_size
 		self.z_dim = z_dim
@@ -68,8 +69,15 @@ class infoganfashionmnist:
 		human_cnn.to(self.device)
 		return human_cnn
 
-	def active_learner(self):
-		model = CNNModel().to(self.device)
-		optimizer = torch.optim.Adagrad(model.parameters(), lr=0.015)
+	@staticmethod
+	def active_learner(device,seed):
+		torch.backends.cudnn.deterministic = True
+		torch.manual_seed(seed)
+		torch.cuda.manual_seed(seed)
+		np.random.seed(seed)
+		random.seed(seed)
+		model = CNNModel().to(device)
+		learning_rate = 0.015
+		optimizer = torch.optim.Adagrad(model.parameters(), lr=learning_rate)
 		scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.1)
 		return model, optimizer, scheduler

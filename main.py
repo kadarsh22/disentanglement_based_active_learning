@@ -1,4 +1,3 @@
-import torch
 from config import save_config
 from config import get_config
 from dataloader import get_loader

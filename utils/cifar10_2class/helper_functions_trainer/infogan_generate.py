@@ -8,6 +8,7 @@ from torch.autograd import  Variable
 from infoGAN import Generator
 import torch.nn.functional as F
 import torch.nn as nn
+import random
 
 
 class Entropy(nn.Module):
@@ -63,7 +64,13 @@ class infogancifar10_2class: ##TODO start wih infoganCifar2Helper
 		human_cnn.to(self.device)
 		return human_cnn
 
-	def active_learner(self):
-		model = Lenet().to(self.device)
+	@staticmethod
+	def active_learner(device,seed):
+		torch.backends.cudnn.deterministic = True
+		torch.manual_seed(seed)
+		torch.cuda.manual_seed(seed)
+		np.random.seed(seed)
+		random.seed(seed)
+		model = Lenet().to(device)
 		optimizer = torch.optim.Adam(model.parameters(), lr=0.001, amsgrad=True)
 		return model, optimizer, None

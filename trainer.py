@@ -29,7 +29,7 @@ class Trainer:
 
 		images = self._generate_images()
 		labels = self._human_cnn_annotation(images)
-		self.get_generation_accuracy(images)
+		# self.get_generation_accuracy(images)
 		train_dataset = NewDataset(images, labels)
 		_, accuracy = self._train_cnn(train_dataset, self.data_loader[1])
 

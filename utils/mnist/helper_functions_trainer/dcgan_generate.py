@@ -7,6 +7,8 @@ sys.path.insert(0, 'utils/mnist/model_files/CNN')
 from dcgan import Generator as GAN
 from lenet_mnist import Lenet
 import torch.nn.functional as F
+import numpy as np
+import random
 
 class Entropy(nn.Module):
 	def __init__(self):
@@ -50,7 +52,13 @@ class dcgannmnist:
 		full_cnn_model.to(self.device)
 		return full_cnn_model
 
-	def active_learner(self):
-		model = Lenet().to(self.device)
+	@staticmethod
+	def active_learner(device,seed):
+		torch.backends.cudnn.deterministic = True
+		torch.manual_seed(seed)
+		torch.cuda.manual_seed(seed)
+		np.random.seed(seed)
+		random.seed(seed)
+		model = Lenet().to(device)
 		optimizer = torch.optim.Adam(model.parameters(), lr= 0.001, amsgrad=True)
 		return model , optimizer ,None

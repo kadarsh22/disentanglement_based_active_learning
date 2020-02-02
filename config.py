@@ -33,7 +33,7 @@ parser.add_argument('--no_classes', type=int, default=10)
 parser.add_argument('--initial_samples', type=int, default=100, help='The number of initial datapoints to be labelled')
 parser.add_argument('--active_sample_size', type=int, default=200,
 					help='The number of points to be labelled in each active learning cycle')
-parser.add_argument('--labelling_budget', type=int, default=200, help='Total number of points that could be labelled')
+parser.add_argument('--labelling_budget', type=int, default=10000, help='Total number of points that could be labelled')
 parser.add_argument('--random_seeds', type=int, default=3, help='Number of random seeds to run for ')
 parser.add_argument('--active_learning',type = bool ,default= False ,help = 'Wether active_learning or Not ')
 

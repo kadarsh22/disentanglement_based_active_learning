@@ -1,15 +1,18 @@
+import sys
+
 import torch
 from torch.utils.data.dataset import random_split
-import sys
 
 sys.path.insert(0, 'utils/')
 from Custom_Dataset import NewDataset
 from model_selection import model_selection
-import random
+from early_stopping import EarlyStopping
 import os
+import torch.nn as nn
 import numpy as np
 import matplotlib.pyplot as plt
 import torchvision
+from torch.autograd import Variable
 from copy import deepcopy
 
 
@@ -19,37 +22,40 @@ class ActivelearningDal:
 		self.config = config
 		self.input_channels = config.input_channel
 		self.input_size = config.input_size
+		self.active_learning = config.active_learning
 		self.batch_size = config.batch_size
 		self.dataset = config.dataset
+		self.gan_type = config.gan_type
 		self.labelling_budget = config.labelling_budget
 		self.data_loader = data_loader
+		self.num_epochs = config.epoch
 		self.no_classes = config.no_classes
 		self.active_sample_size = config.active_sample_size
 		self.intial_samples = config.initial_samples
 		self.device = torch.device("cuda:" + str(config.device_id) if torch.cuda.is_available() else "cpu")
 		self.trainer = trainer
-
-		self.generator, self.human_cnn, self.active_learner, self.optimizer, self.scheduler = model_selection(
-			self.dataset, config.gan_type, self.device, config.active_learning)
+		self.generator, self.human_cnn, _, _, _ = model_selection(self.dataset, config.gan_type, self.device,
+																  config.active_learning)
 
 	def dal_active_learning(self):
-		random_seeds = [123,22,69,5,108]
+		random_seeds = [123, 22, 69, 5, 108]
 		gen_size = int(self.active_sample_size / self.no_classes)  ## reconfirm if its okay to keep it out side loop
 		total_active_cycles = int(self.labelling_budget / self.active_sample_size) - 1
-
+		label_freq_cycle = torch.zeros(total_active_cycles, self.no_classes)
 
 		for i in random_seeds:
 			print("Executing Random seed " + str(i))
 			active_learning_cycle = 0
 
 			self.save_dir = os.path.join(self.config.project_root,
-									f'results/{self.config.model_name}/' + 'random_seed' + str(i))
+										 f'results/{self.config.model_name}/' + 'random_seed' + str(i))
 			if not os.path.isdir(self.save_dir):
 				self.save_dir = os.path.join(self.config.project_root,
-										f'results/{self.config.model_name}/' + 'random_seed' + str(i))
+											 f'results/{self.config.model_name}/' + 'random_seed' + str(i))
 				os.makedirs(self.save_dir, exist_ok=True)
 
-			model = self.active_learner
+			_, _, model, optimizer, scheduler = model_selection(self.dataset, self.gan_type, self.device,
+																self.active_learning, i)
 			model.to(self.device)
 
 			train_dataset = self.data_loader[3]
@@ -90,16 +96,16 @@ class ActivelearningDal:
 			train_dataset.targets = train_dataset.targets[training_index]
 			training_data_labels = train_dataset.targets.numpy()
 
-			print(type(train_dataset.data))
 			self.save_image(train_dataset.data)
-			print(training_data_labels)
 
 			temp_train_dataset = deepcopy(train_dataset)
 			num_misclassifications, entropies, properly_classified_data, accuracy_list = ([] for i in range(4))
+			val_loader = torch.utils.data.DataLoader(dataset=validation_dataset, batch_size=self.batch_size,
+													 shuffle=True)
 
 			size = self.intial_samples
 			while (size <= self.labelling_budget):
-				model, accuracy = self.trainer._train_cnn(train_dataset, validation_dataset)
+				model, accuracy = self.get_cnn_accuracy(train_dataset, val_loader, model, optimizer, scheduler)
 				accuracy_list.append(accuracy)
 				print("----Size of training data----", size)
 				print("-----Accuracy-------", accuracy)
@@ -114,12 +120,12 @@ class ActivelearningDal:
 				if self.intial_samples == size:
 					self.save_image(new_samples)
 
-				if  self.dataset == 'fashion-mnist':
+				if self.dataset == 'fashion-mnist':
 					latent_code = torch.LongTensor([3, 7, 6, 2, 0, 8, 1, 5, 4, 9] * gen_size)
 				elif self.dataset == 'mnist':
-					latent_code =  torch.LongTensor([0,1,2,3,4,5,6,7,8,9] * gen_size)
+					latent_code = torch.LongTensor([0, 1, 2, 3, 4, 5, 6, 7, 8, 9] * gen_size)
 				else:
-					latent_code = torch.LongTensor([0,1]*gen_size)
+					latent_code = torch.LongTensor([0, 1] * gen_size)
 
 				if len(properly_classified_data) != 0:
 					new_samples = torch.cat((new_samples.data, properly_classified_data.data), 0)
@@ -177,9 +183,8 @@ class ActivelearningDal:
 
 				size = len(train_dataset)
 				active_learning_cycle = active_learning_cycle + 1
-
-				self.set_seed(i)
-				model = self.active_learner
+				_, _, model, optimizer, scheduler = model_selection(self.dataset, self.gan_type, self.device,
+																	self.active_learning, i)
 				model.to(self.device)
 
 				if size % 2000 == 0:
@@ -194,14 +199,69 @@ class ActivelearningDal:
 
 			print("--------Random seed " + str(i) + "completed--------")
 
+	def get_cnn_accuracy(self, train_dataset, validation_loader, model, optimizer, scheduler):
+
+		train_loader = torch.utils.data.DataLoader(dataset=train_dataset,
+												   batch_size=self.batch_size,
+												   shuffle=True, drop_last=False)
+		criterion = nn.CrossEntropyLoss()
+		test_loader = self.data_loader[2]
+		early_stopping = EarlyStopping(patience=10, verbose=False)
+		for epoch in range(self.num_epochs):
+			train_loss = []
+			valid_loss = []
+			model.train()
+			for images, labels in train_loader:
+				images = Variable(images).to(self.device)
+				labels = Variable(labels).to(self.device)
+				optimizer.zero_grad()
+				outputs = model(images)
+				loss = criterion(outputs, labels)
+				loss.backward()
+				optimizer.step()
+				train_loss.append(loss.item())
+			if scheduler is not None:
+				scheduler.step()
+			model.eval()
+			for images, labels in validation_loader:
+				images = images.to(self.device)
+				labels = labels.to(self.device)
+				outputs = model(images)
+				loss = criterion(outputs, labels)
+				valid_loss.append(loss.item())
+
+			train_loss_avg = sum(train_loss) / len(train_loss)
+			valid_loss_avg = sum(valid_loss) / len(valid_loss)
+
+	#		print('Epoch: {}, train_loss : {}, test_loss : {}'.format(epoch, train_loss_avg, valid_loss_avg))
+			early_stopping(valid_loss_avg, model)
+			if early_stopping.early_stop:
+				break
+
+		model.load_state_dict(torch.load('checkpoint.pt'))
+		model.eval()
+
+		correct = 0
+		total = 0
+		test_loss = []
+		for images, labels in test_loader:
+			images = images.requires_grad_().to(self.device)
+			labels = labels.to(self.device)
+			outputs = model(images)
+			loss = criterion(outputs, labels)
+			test_loss.append(loss.data)
+			_, predicted = torch.max(outputs.data, 1)
+			total += labels.size(0)
+			correct += (predicted.cpu() == labels.cpu()).sum()
+
+		correct = correct.float()
+		accuracy = 100 * correct / total
+		test_loss = sum(test_loss) / len(test_loss)
+		print(accuracy)
+
+		return model, accuracy
+
 	def save_image(self, image):
 		grid_img = torchvision.utils.make_grid(image[:100], nrow=10, normalize=True)
 		plt.imshow(grid_img.permute(1, 2, 0).cpu().data)
-		plt.savefig(self.save_dir + 'self.config.model_name' + '.png' )
-
-	def set_seed(self, seed):
-		torch.backends.cudnn.deterministic = True
-		torch.manual_seed(seed)
-		torch.cuda.manual_seed(seed)
-		np.random.seed(seed)
-		random.seed(seed)
+		plt.savefig(self.save_dir + 'self.config.model_name' + '.png')
