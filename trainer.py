@@ -2,13 +2,16 @@ import torch
 import torch.nn as nn
 from torch.autograd import Variable
 import sys
-
+import numpy as np
 sys.path.insert(0, 'utils/')
 import torch.nn.functional as F
 from Custom_Dataset import NewDataset
 from early_stopping import EarlyStopping
 from model_selection import model_selection
 import torchvision
+import os
+import matplotlib.pyplot as plt
+import itertools
 
 
 class Trainer:
@@ -29,6 +32,7 @@ class Trainer:
 
 		images = self._generate_images()
 		labels = self._human_cnn_annotation(images)
+		self.save_image(images)
 		self.get_generation_accuracy(labels)
 		train_dataset = NewDataset(images, labels)
 		_, accuracy = self._train_cnn(train_dataset, self.data_loader[1])
@@ -136,16 +140,28 @@ class Trainer:
 		return model, accuracy
 
 	def get_generation_accuracy(self, labels):
+
 		if self.dataset == 'fashion-mnist':
 			gan_labels = torch.LongTensor([3, 7, 6, 2, 0, 8, 1, 5, 4, 9] * int(labels.shape[0]/10))
 		elif self.dataset == 'mnist':
-			gan_labels = torch.LongTensor([0, 1, 2, 3, 4, 5, 6, 7, 8, 9] * int(labels.shape[0]/10))
+			gan_labels = torch.LongTensor([0,1, 2, 3, 4 ,5 ,6 ,7 ,8 ,9] * int(labels.shape[0] / 10))
 		else:
-			gan_labels = torch.LongTensor([0, 1] * int(labels.shape[0]/2))
-		correct = (gan_labels== labels.cpu()).sum()
+			each_class_samples = int(1000 / 2)
+			latent_code = []
+			for i in range(0, 2):
+				latent_code.extend([i] * each_class_samples)
+			latent_code = latent_code*10
+			gan_labels = torch.LongTensor(latent_code)
+
+		correct = (gan_labels.cpu() == labels.cpu()).sum()
 		total = labels.size(0)
 		correct = correct.float()
 		accuracy = 100 * correct / total
 		print('Generation accuracy ---',accuracy)
 
 
+	def save_image(self, image):
+		self.save_dir = os.path.join(self.config.project_root, f'results/{self.config.model_name}/' )
+		grid_img = torchvision.utils.make_grid(image[0:100], nrow=10, normalize=True)
+		plt.imshow(grid_img.permute(1, 2, 0).cpu().data)
+		plt.savefig(self.save_dir + self.config.model_name + '.png')

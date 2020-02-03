@@ -23,7 +23,7 @@ class Entropy(nn.Module):
 
 
 class infoganfashionmnist:
-	def __init__(self, device, sample_size=1000, z_dim=62, len_discrete_code=10, active_learning=False):
+	def __init__(self, device, sample_size=200, z_dim=62, len_discrete_code=10, active_learning=False):
 		self.device = device
 		self.sample_size = sample_size
 		self.z_dim = z_dim
@@ -45,7 +45,7 @@ class infoganfashionmnist:
 		y_cont_ = torch.from_numpy(np.random.uniform(-1, 1, size=(self.sample_size, 2))).type(torch.FloatTensor).to(
 			self.device)
 
-		optimizer = torch.optim.Adam([z.requires_grad_()], lr=0.0001)
+		optimizer = torch.optim.Adam([z.requires_grad_(),y_cont_.requires_grad_() ], lr=0.0001)
 		if self.active_learning == True:
 			z_criterion = Entropy()
 			for opt in range(500):

@@ -1,31 +1,37 @@
 import torch
 import torch.nn as nn
 
-class Generator(nn.Module):
-    def __init__(self):
-        super(Generator, self).__init__()
-        input_dim = 62+ 2 + 2
+class generator(nn.Module):
+    # Network Architecture is exactly same as in infoGAN (https://arxiv.org/abs/1606.03657)
+    # Architecture : FC1024_BR-FC7x7x128_BR-(64)4dc2s_BR-(1)4dc2s_S
+    def __init__(self, input_dim=62, output_dim=3, input_size=32, len_discrete_code=2, len_continuous_code=2):
+        super(generator, self).__init__()
+        self.input_dim = input_dim
+        self.output_dim = output_dim
+        self.input_size = input_size
+        self.len_discrete_code = len_discrete_code  # categorical distribution (i.e. label)
+        self.len_continuous_code = len_continuous_code  # gaussian distribution (e.g. rotation, thickness)
 
-        self.init_size = 32// 4  # Initial size before upsampling
-        self.l1 = nn.Sequential(nn.Linear(input_dim, 128 * self.init_size ** 2))
-
-        self.conv_blocks = nn.Sequential(
-            nn.BatchNorm2d(128),
-            nn.Upsample(scale_factor=2),
-            nn.Conv2d(128, 128, 3, stride=1, padding=1),
-            nn.BatchNorm2d(128, 0.8),
-            nn.LeakyReLU(0.2, inplace=True),
-            nn.Upsample(scale_factor=2),
-            nn.Conv2d(128, 64, 3, stride=1, padding=1),
-            nn.BatchNorm2d(64, 0.8),
-            nn.LeakyReLU(0.2, inplace=True),
-            nn.Conv2d(64, 3, 3, stride=1, padding=1),
+        self.fc = nn.Sequential(
+            nn.Linear(self.input_dim + self.len_discrete_code + self.len_continuous_code, 1024),
+            nn.BatchNorm1d(1024),
+            nn.ReLU(),
+            nn.Linear(1024, 128 * (self.input_size // 4) * (self.input_size // 4)),
+            nn.BatchNorm1d(128 * (self.input_size // 4) * (self.input_size // 4)),
+            nn.ReLU(),
+        )
+        self.deconv = nn.Sequential(
+            nn.ConvTranspose2d(128, 64, 4, 2, 1),
+            nn.BatchNorm2d(64),
+            nn.ReLU(),
+            nn.ConvTranspose2d(64, self.output_dim, 4, 2, 1),
             nn.Tanh(),
         )
 
-    def forward(self, noise, labels, code):
-        gen_input = torch.cat((noise, labels, code), 1)
-        out = self.l1(gen_input)
-        out = out.view(out.shape[0], 128, self.init_size, self.init_size)
-        img = self.conv_blocks(out)
-        return img
+    def forward(self, input, cont_code, dist_code):
+        x = torch.cat([input, cont_code, dist_code], 1)
+        x = self.fc(x)
+        x = x.view(-1, 128, (self.input_size // 4), (self.input_size // 4))
+        x = self.deconv(x)
+
+        return x

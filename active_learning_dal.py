@@ -123,7 +123,7 @@ class ActivelearningDal:
 				if self.dataset == 'fashion-mnist':
 					latent_code = torch.LongTensor([3, 7, 6, 2, 0, 8, 1, 5, 4, 9] * gen_size)
 				elif self.dataset == 'mnist':
-					latent_code = torch.LongTensor([0, 1, 2, 3, 4, 5, 6, 7, 8, 9] * gen_size)
+					latent_code = torch.LongTensor([5, 9, 6, 4, 2 ,7 ,0 ,3 ,1 ,8] * 1000)
 				else:
 					latent_code = torch.LongTensor([0, 1] * gen_size)
 
