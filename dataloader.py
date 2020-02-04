@@ -69,7 +69,6 @@ def get_loader(batch_size, root, dataset, output_activation):
 		num_samples_class = int(10000/len(classes_))
 		for i in classes_:
 			indices = get_same_index(train_dataset.targets, label=torch.tensor(i))
-			print(len(indices))
 			dataset_idx.append(indices[:num_samples_class])
 		image_idx = [item for sublist in dataset_idx for item in sublist]
 		train_data = torch.stack([train_dataset[index][0] for index in image_idx])

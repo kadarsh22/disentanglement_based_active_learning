@@ -45,8 +45,9 @@ class infoganfashionmnist:
 		y_cont_ = torch.from_numpy(np.random.uniform(-1, 1, size=(self.sample_size, 2))).type(torch.FloatTensor).to(
 			self.device)
 
-		optimizer = torch.optim.Adam([z.requires_grad_(),y_cont_.requires_grad_() ], lr=0.0001)
+
 		if self.active_learning == True:
+			optimizer = torch.optim.Adam([z.requires_grad_(), y_cont_.requires_grad_()], lr=0.0001)
 			z_criterion = Entropy()
 			for opt in range(500):
 				optimizer.zero_grad()

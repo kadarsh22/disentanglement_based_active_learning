@@ -10,15 +10,6 @@ import torch.nn.functional as F
 from InfoGAN import InfoGAN
 import random
 
-
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
-
-"""
-Architecture based on InfoGAN paper.
-"""
-
 c1_len = 10 # Multinomial
 c2_len = 2 # Gaussian
 c3_len = 2 # Bernoulli
@@ -69,31 +60,26 @@ class Generator(nn.Module):
         return F.sigmoid(x)
 
 class Discriminator(nn.Module):
-	def __init__(self):
-		super(Discriminator, self).__init__()
+    def __init__(self):
+        super(Discriminator, self).__init__()
 
-		self.conv1 = Conv2d(1, 64, kernel_size=4, stride=2, padding=1)  # 28 x 28 -> 14 x 14
-		self.conv2 = Conv2d(64, 128, kernel_size=4, stride=2, padding=1)  # 14 x 14 -> 7 x 7
+        self.conv1 = Conv2d(1, 64, kernel_size = 4, stride = 2, padding = 1) # 28 x 28 -> 14 x 14
+        self.conv2 = Conv2d(64, 128, kernel_size = 4, stride = 2, padding = 1) # 14 x 14 -> 7 x 7
 
-		self.fc1 = Linear(128 * 7 ** 2, 1024)
-		self.fc2 = Linear(1024, 1)
-		self.fc1_q = Linear(1024, embedding_len)
+        self.fc1 = Linear(128 * 7 ** 2, 1024)
+        self.fc2 = Linear(1024, 1)
+        self.fc1_q = Linear(1024, embedding_len)
 
-		self.bn1 = nn.BatchNorm2d(128)
-		self.bn2 = nn.BatchNorm1d(1024)
-		self.bn_q1 = nn.BatchNorm1d(embedding_len)
+        self.bn1 = nn.BatchNorm2d(128)
+        self.bn2 = nn.BatchNorm1d(1024)
+        self.bn_q1 = nn.BatchNorm1d(embedding_len)
 
-	def forward(self, x):
-		x = F.leaky_relu(self.conv1(x))
-		x = F.leaky_relu(self.bn1(self.conv2(x))).view(-1, 7 ** 2 * 128)
+    def forward(self, x):
+        x = F.leaky_relu(self.conv1(x))
+        x = F.leaky_relu(self.bn1(self.conv2(x))).view(-1, 7 ** 2 * 128)
 
-		x = F.leaky_relu(self.bn2(self.fc1(x)))
-		return self.fc2(x), F.leaky_relu(self.bn_q1(self.fc1_q(x)))
-
-
-
-
-
+        x = F.leaky_relu(self.bn2(self.fc1(x)))
+        return self.fc2(x), F.leaky_relu(self.bn_q1(self.fc1_q(x)))
 
 class Entropy(nn.Module):
     def __init__(self):
@@ -120,15 +106,16 @@ class infoganmnist:
 	def generate_images(self,model = None):
 		z_dict = self.G.get_z(c1_len * 100, sequential=True)
 		gan_input = torch.cat([z_dict[k] for k in z_dict.keys()], dim=1)
-
+		gan_input = Variable(gan_input, requires_grad=True).to(self.device)
 		if self.active_learning == True:
-			optimizer = torch.optim.Adam([z_.requires_grad_()], lr= 0.001)
+			optimizer = torch.optim.Adam([gan_input.requires_grad_()], lr= 0.001)
 			z_criterion = Entropy()
 			for opt in range(500):
 				optimizer.zero_grad()
 				out_gen = self.G.gen(gan_input)
 				loss = z_criterion(model(out_gen))
 				loss.backward()
+				gan_input.grad[:, z_len:] = gan_input.grad[:, z_len:].data.fill_(0)
 				optimizer.step()
 			return out_gen ,loss.item()
 		else:

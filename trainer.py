@@ -2,14 +2,18 @@ import torch
 import torch.nn as nn
 from torch.autograd import Variable
 import sys
+import numpy as np
 sys.path.insert(0, 'utils/')
 import torch.nn.functional as F
 from Custom_Dataset import NewDataset
 from early_stopping import EarlyStopping
 from model_selection import model_selection
 import torchvision
-import matplotlib.pyplot as plt
 import os
+import shutil
+import matplotlib.pyplot as plt
+import itertools
+
 
 class Trainer:
 	def __init__(self, config, data_loader):
@@ -20,6 +24,7 @@ class Trainer:
 		self.batch_size = config.batch_size
 		self.dataset = config.dataset
 		self.data_loader = data_loader
+		self.project_root = config.project_root
 		self.device = torch.device("cuda:" + str(config.device_id) if torch.cuda.is_available() else "cpu")
 
 		self.generator, self.human_cnn, self.active_learner, self.optimizer, self.scheduler = model_selection(
@@ -37,14 +42,15 @@ class Trainer:
 	def _generate_images(self):
 
 		no_of_loops = self.config.data_size / 1000
-
+		if not os.path.exists(self.project_root+'temp_files/'):
+			os.makedirs(self.project_root+'temp_files/')
 		for i in range(int(no_of_loops)):
 			imgs = self.generator.generate_images(model=None)
-			torch.save(imgs, 'image_batch' + str(i))
+			torch.save(imgs,self.project_root+'temp_files/'+ 'image_batch' + str(i))
 
 		data = []
 		for i in range(int(no_of_loops)):
-			data.append(torch.load('image_batch' + str(i)))
+			data.append(torch.load(self.project_root+'temp_files/'+'image_batch' + str(i)))
 
 		images = torch.stack(data).view(-1, self.input_channels, self.input_size, self.input_size).to(self.device)
 
@@ -141,7 +147,7 @@ class Trainer:
 		if self.dataset == 'fashion-mnist':
 			gan_labels = torch.LongTensor([3, 7, 6, 2, 0, 8, 1, 5, 4, 9] * int(labels.shape[0]/10))
 		elif self.dataset == 'mnist':
-			gan_labels = torch.LongTensor([0,1,2,3,4,5,6,7,8,9] * int(labels.shape[0] / 10))
+			gan_labels = torch.LongTensor([0,1, 2, 3, 4 ,5 ,6 ,7 ,8 ,9] * int(labels.shape[0] / 10))
 		else:
 			each_class_samples = int(1000 / 2)
 			latent_code = []
@@ -154,6 +160,7 @@ class Trainer:
 		total = labels.size(0)
 		correct = correct.float()
 		accuracy = 100 * correct / total
+		shutil.rmtree(self.project_root + '/temp_files/' )
 		print('Generation accuracy ---',accuracy)
 
 
