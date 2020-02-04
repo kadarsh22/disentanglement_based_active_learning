@@ -56,8 +56,8 @@ class InfoGAN:
                 z_dict = self.get_z(data.size()[0])
                 z = torch.cat([z_dict[k] for k in z_dict.keys()], dim = 1)
 
-                data = Variable(data.float().cuda(async = True)) / 255
-                targets = Variable(targets.float().cuda(async = True))
+                data = Variable(data.float().cuda()) / 255
+                targets = Variable(targets.float().cuda())
 
                 # Forward pass on real MNIST
                 out_dis, hid = self.dis(data)

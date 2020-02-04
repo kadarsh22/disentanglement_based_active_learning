@@ -18,7 +18,7 @@ def get_loader(batch_size, root, dataset, output_activation):
 		transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize(mean=(0.5,), std=(0.5,))])
 
 	if dataset == 'mnist':
-		save_dir = f'{data_dir}/mnist'
+		save_dir = f'{data_dir}'
 		os.makedirs(save_dir, exist_ok=True)
 		train_dataset = torchvision.datasets.MNIST(root=f'{data_dir}/', download=True,
 												   train=True, transform=transform)
@@ -37,7 +37,7 @@ def get_loader(batch_size, root, dataset, output_activation):
 		return dataloader
 
 	elif dataset == 'fashion-mnist':
-		save_dir = f'{data_dir}/fashionmnist'
+		save_dir = f'{data_dir}'
 		os.makedirs(save_dir, exist_ok=True)
 
 		train_dataset = torchvision.datasets.FashionMNIST(root=f'{data_dir}/', download=True,
@@ -57,7 +57,7 @@ def get_loader(batch_size, root, dataset, output_activation):
 
 	elif dataset == 'cifar10_2class':
 
-		save_dir = f'{data_dir}/cifar10_2classs'
+		save_dir = f'{data_dir}'
 		os.makedirs(save_dir, exist_ok=True)
 		transform = transforms.Compose([transforms.ToTensor(),
 										transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)), ])

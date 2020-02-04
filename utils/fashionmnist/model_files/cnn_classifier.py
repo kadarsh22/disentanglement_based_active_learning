@@ -17,19 +17,19 @@ class CNNModel(nn.Module):
         self.cnn1 = nn.Conv2d(in_channels=1, out_channels=64, kernel_size=3, stride=1, padding=1)
         self.bn1 = nn.BatchNorm2d(64)
         self.swish1 = Swish()
-        nn.init.xavier_normal(self.cnn1.weight)
+        nn.init.xavier_normal_(self.cnn1.weight)
         self.maxpool1 = nn.MaxPool2d(kernel_size=2, stride=1)
 
         self.cnn2 = nn.Conv2d(in_channels=64, out_channels=32, kernel_size=3, stride=1, padding=1)
         self.bn2 = nn.BatchNorm2d(32)
         self.swish2 = Swish()
-        nn.init.xavier_normal(self.cnn2.weight)
+        nn.init.xavier_normal_(self.cnn2.weight)
         self.maxpool2 = nn.MaxPool2d(kernel_size=2)
 
         self.cnn3 = nn.Conv2d(in_channels=32, out_channels=64, kernel_size=3, stride=1, padding=1)
         self.bn3 = nn.BatchNorm2d(64)
         self.swish3 = Swish()
-        nn.init.xavier_normal(self.cnn3.weight)
+        nn.init.xavier_normal_(self.cnn3.weight)
         self.maxpool3 = nn.MaxPool2d(kernel_size=2)
         self.fc1 = nn.Linear(64 * 6 * 6, 10)
 
