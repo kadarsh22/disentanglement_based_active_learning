@@ -2,17 +2,14 @@ import torch
 import torch.nn as nn
 from torch.autograd import Variable
 import sys
-import numpy as np
 sys.path.insert(0, 'utils/')
 import torch.nn.functional as F
 from Custom_Dataset import NewDataset
 from early_stopping import EarlyStopping
 from model_selection import model_selection
 import torchvision
-import os
 import matplotlib.pyplot as plt
-import itertools
-
+import os
 
 class Trainer:
 	def __init__(self, config, data_loader):
@@ -144,7 +141,7 @@ class Trainer:
 		if self.dataset == 'fashion-mnist':
 			gan_labels = torch.LongTensor([3, 7, 6, 2, 0, 8, 1, 5, 4, 9] * int(labels.shape[0]/10))
 		elif self.dataset == 'mnist':
-			gan_labels = torch.LongTensor([0,1, 2, 3, 4 ,5 ,6 ,7 ,8 ,9] * int(labels.shape[0] / 10))
+			gan_labels = torch.LongTensor([0,1,2,3,4,5,6,7,8,9] * int(labels.shape[0] / 10))
 		else:
 			each_class_samples = int(1000 / 2)
 			latent_code = []

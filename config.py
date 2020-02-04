@@ -6,6 +6,7 @@ from pathlib import Path
 
 def get_root():
 	project_root = str(Path(__file__).resolve().parent.parent)
+	project_root =project_root + '/Disentaglement-Active-Learning-master/'
 	return project_root
 
 
