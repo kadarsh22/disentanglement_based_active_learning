@@ -23,7 +23,7 @@ class Entropy(nn.Module):
 
 
 class infoganfashionmnist:
-	def __init__(self, device, sample_size=200, z_dim=62, len_discrete_code=10, active_learning=False):
+	def __init__(self, device, sample_size=1000, z_dim=62, len_discrete_code=10, active_learning=False):
 		self.device = device
 		self.sample_size = sample_size
 		self.z_dim = z_dim
@@ -71,7 +71,7 @@ class infoganfashionmnist:
 		return human_cnn
 
 	@staticmethod
-	def active_learner(device,seed):
+	def active_learner(device,seed=123):
 		torch.backends.cudnn.deterministic = True
 		torch.manual_seed(seed)
 		torch.cuda.manual_seed(seed)

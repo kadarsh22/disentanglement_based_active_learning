@@ -2,7 +2,6 @@ import torch
 import torch.nn as nn
 from torch.autograd import Variable
 import sys
-import numpy as np
 sys.path.insert(0, 'utils/')
 import torch.nn.functional as F
 from Custom_Dataset import NewDataset
@@ -12,7 +11,6 @@ import torchvision
 import os
 import shutil
 import matplotlib.pyplot as plt
-import itertools
 
 
 class Trainer:
@@ -156,7 +154,7 @@ class Trainer:
 			latent_code = latent_code*10
 			gan_labels = torch.LongTensor(latent_code)
 
-		correct = (gan_labels.cpu() == labels.cpu()).sum()
+		correct = (gan_labels == labels.cpu()).sum()
 		total = labels.size(0)
 		correct = correct.float()
 		accuracy = 100 * correct / total
