@@ -36,6 +36,7 @@ parser.add_argument('--active_sample_size', type=int, default=200,
 parser.add_argument('--labelling_budget', type=int, default=10000, help='Total number of points that could be labelled')
 parser.add_argument('--random_seeds', type=int, default=3, help='Number of random seeds to run for ')
 parser.add_argument('--active_learning',type = bool ,default= False ,help = 'Wether active_learning or Not ')
+parser.add_argument('--algorithm',type = str ,default= 'gaal' ,help = 'The active learning algorithm which should be ran')
 
 
 def get_config():
