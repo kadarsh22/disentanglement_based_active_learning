@@ -1,6 +1,6 @@
 # Disentaglement-Active-Learning
 
-To run infogan
+To run the code :
 ```bash
 python main.py --dataset  'mnist' --gan_type 'infoGAN' --output_activation 'sigmoid' --data_size 10000
 python main.py --dataset  'fashion-mnist' --gan_type 'infoGAN' --output_activation 'tanh' --data_size 10000
