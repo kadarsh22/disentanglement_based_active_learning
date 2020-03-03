@@ -1,17 +1,22 @@
 # Disentaglement-Active-Learning
 
-To run infogan
+To run DAL :
 ```bash
 python main.py --dataset  'mnist' --gan_type 'infoGAN' --output_activation 'sigmoid' --data_size 10000
 python main.py --dataset  'fashion-mnist' --gan_type 'infoGAN' --output_activation 'tanh' --data_size 10000
 python main.py --dataset  'cifar10_2class' --gan_type 'infoGAN' --output_activation 'tanh' --data_size 10000 --no_classes 2 --input_channel 3  --input_size 32
 ```
 
-Note humancnn for fashion mnist couldnot be uploaded ti git as size exceed >100MB
-download it from the url given below and keep the downloaded files in:
+Human-CNN model for Fashion-MNIST dataset couldn't be uploaded to Git as size exceeds 100MB. Download  the
+model from link below: 
 ```bash
 utils/fashionmnist/trainedmoddels 
 link : https://drive.google.com/open?id=1M_5ZumHrNjn-_rTiBA6nnsHiYi9p-TbU
+```
+
+Downloaded model should be saved in the folder below:
+```bash
+utils/fashionmnist/trainedmoddels 
 ```
 
 Project Directory Structure
@@ -57,4 +62,9 @@ Project Directory Structure
     │       ├── lenet
     │       └── wgan
     └── svhn
+```
+
+LInk to the Arxiv version of paper :
+```bash
+https://arxiv.org/abs/1912.07018
 ```
