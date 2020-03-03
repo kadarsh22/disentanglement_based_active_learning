@@ -32,6 +32,7 @@ class Trainer:
 
 		images = self._generate_images()
 		labels = self._human_cnn_annotation(images)
+		print(images.shape)
 		self.save_image(images)
 		self.get_generation_accuracy(labels)
 		train_dataset = NewDataset(images, labels)
@@ -71,6 +72,7 @@ class Trainer:
 			labels.append(predicted)
 
 		final_labels = torch.stack(labels).view(-1)
+		torch.save(final_labels,'human_annotated_labels')
 
 		print('Label annoated by human CNN')
 
@@ -158,7 +160,7 @@ class Trainer:
 		total = labels.size(0)
 		correct = correct.float()
 		accuracy = 100 * correct / total
-		shutil.rmtree(self.project_root + '/temp_files/' )
+		# shutil.rmtree(self.project_root + '/temp_files/' )
 		print('Generation accuracy ---',accuracy)
 
 
