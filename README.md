@@ -10,7 +10,7 @@ Disentanglement based Active Learning. \
 - Python 3
 - NVIDIA GPU + CUDA CuDNN
 
-<img src='img/dal_block_diagram.jpeg' width=800>
+<img src='dal_block_diagram.png' width=800>
 
 Disentanglement based Active Learning (DAL), a new active learning technique based on self-supervision
 which leverages the concept of disentanglement. Instead of requesting labels from human oracle, our method automatically
